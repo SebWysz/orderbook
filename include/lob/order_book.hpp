@@ -36,7 +36,7 @@ struct OrderHandle {
 class OrderBook {
 public:
 
-    void apply(const Event& event);
+    bool apply(const Event& event);
 
     [[nodiscard]] uint64_t order_count() const noexcept {
         return order_location.size();
@@ -81,6 +81,7 @@ private:
                 qty -= std::min(first_qty, qty);
             }
         }
+        // Queue order for fill later
         if (qty > 0) {
             my_book[price].emplace_back(order_id, price, qty);
             std::list<Order>::iterator iter_to_item = std::prev(my_book[price].end());

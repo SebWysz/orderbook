@@ -11,7 +11,8 @@ using Timestamp = std::uint64_t;
 
 enum class Side {
     Buy,
-    Sell
+    Sell,
+    Cancel
 };
 
 } // namespace lob

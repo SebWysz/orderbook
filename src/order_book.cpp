@@ -1,20 +1,20 @@
 #include "lob/order_book.hpp"
 #include "lob/event.hpp"
 
+#include <iostream>
+
 namespace lob {
 
-void OrderBook::apply(const Event& event) {
+bool OrderBook::apply(const Event& event) {
     switch (event.type) {
         case lob::EventType::Cancel:
-            cancel_order(event.order_id);
-            break;
+            return cancel_order(event.order_id);
         case lob::EventType::Add:
-            add_order(event);
-            break;
+            return add_order(event);
         default:
-            // TODO: Error Handling?
             break;
     }
+    return false;
 }
 
 bool OrderBook::add_order(const Event& event) {
@@ -36,6 +36,9 @@ bool OrderBook::add_order(const Event& event) {
                 }
             );
             break;
+        default:
+            // lob::Side::Cancel, invalid state
+            return false;
     }
 
     return true;
@@ -44,16 +47,32 @@ bool OrderBook::add_order(const Event& event) {
 
 // Assumes ID is a valid order that has not been filled.
 bool OrderBook::cancel_order(OrderId id) {
-    OrderHandle& order = order_location[id];
+    if (!order_location.contains(id)) {
+        return false;
+    }
+
+    OrderHandle& order = order_location.at(id);
     switch (order.side) {
         case Side::Buy:
-            bids[order.price].erase(order.order_it);
+            bids.at(order.price).erase(order.order_it);
+            if (bids.at(order.price).empty()) {
+                bids.erase(order.price);
+            }
             break;
 
         case Side::Sell:
-            asks[order.price].erase(order.order_it);
+            asks.at(order.price).erase(order.order_it);
+            if (asks.at(order.price).empty()) {
+                asks.erase(order.price);
+            }
             break;
+
+        default:
+            // lob::Side::Cancel, invalid state
+            return false;
     }
+
+    order_location.erase(id);
 
     return true;
 }
